@@ -19,7 +19,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Ticket, Heart, DollarSign } from "lucide-react";
+import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
+import { toast } from "@/hooks/useToast";
 import { RAFFLE_PRICE, FIFTY_FIFTY_PRICE } from "@/lib/constants";
 
 interface GuestActionsProps {
@@ -42,6 +44,10 @@ export function GuestActions({ guestId, guestName, eventId }: GuestActionsProps)
       utils.dashboard.getStats.invalidate({ eventId });
       setRaffleOpen(false);
       setQuantity(1);
+      toast({ title: "Raffle tickets sold", variant: "success" });
+    },
+    onError: (err) => {
+      toast({ title: "Failed to record sale", description: err.message, variant: "destructive" });
     },
   });
 
@@ -52,6 +58,10 @@ export function GuestActions({ guestId, guestName, eventId }: GuestActionsProps)
       utils.dashboard.getStats.invalidate({ eventId });
       setFiftyFiftyOpen(false);
       setQuantity(1);
+      toast({ title: "50/50 tickets sold", variant: "success" });
+    },
+    onError: (err) => {
+      toast({ title: "Failed to record sale", description: err.message, variant: "destructive" });
     },
   });
 
@@ -73,10 +83,10 @@ export function GuestActions({ guestId, guestName, eventId }: GuestActionsProps)
             Sell 50/50 Tickets
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <a href={`/impact-board?guestId=${guestId}`}>
+            <Link href={`/impact-board?guestId=${guestId}`}>
               <Heart className="mr-2 h-4 w-4" />
               Manage Pledges
-            </a>
+            </Link>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -9,6 +9,7 @@ import { QuickAddGuest } from "./QuickAddGuest";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "@/hooks/useToast";
 
 interface GuestListProps {
   eventId: string;
@@ -61,7 +62,7 @@ export function GuestList({ eventId }: GuestListProps) {
 
       return { previousGuests };
     },
-    onError: (_err, _vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previousGuests) {
         utils.guests.getAll.setData(
           {
@@ -72,6 +73,11 @@ export function GuestList({ eventId }: GuestListProps) {
           context.previousGuests
         );
       }
+      toast({
+        title: "Check-in failed",
+        description: err.message,
+        variant: "destructive",
+      });
     },
     onSettled: () => {
       utils.guests.getAll.invalidate();

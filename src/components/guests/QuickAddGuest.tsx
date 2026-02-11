@@ -23,6 +23,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
+import { toast } from "@/hooks/useToast";
 
 interface QuickAddGuestProps {
   eventId: string;
@@ -47,6 +48,10 @@ export function QuickAddGuest({ eventId, parties }: QuickAddGuestProps) {
       utils.guests.getAttendanceStats.invalidate();
       setOpen(false);
       resetForm();
+      toast({ title: "Guest added successfully", variant: "success" });
+    },
+    onError: (err) => {
+      toast({ title: "Failed to add guest", description: err.message, variant: "destructive" });
     },
   });
 

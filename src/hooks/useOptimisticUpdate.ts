@@ -1,11 +1,10 @@
 "use client";
 
 import { trpc } from "@/lib/trpc/client";
-import { useSyncStore } from "@/store/syncStore";
+import { toast } from "@/hooks/useToast";
 
 export function useOptimisticUpdate(eventId: string | undefined) {
   const utils = trpc.useUtils();
-  useSyncStore();
 
   const checkInMutation = trpc.guests.checkIn.useMutation({
     onMutate: async ({ guestId, isCheckedIn }) => {
@@ -25,9 +24,7 @@ export function useOptimisticUpdate(eventId: string | undefined) {
                 ? {
                     ...g,
                     isCheckedIn,
-                    checkedInAt: isCheckedIn
-                      ? new Date()
-                      : null,
+                    checkedInAt: isCheckedIn ? new Date() : null,
                   }
                 : g
             );
@@ -47,6 +44,11 @@ export function useOptimisticUpdate(eventId: string | undefined) {
       if (eventId) {
         utils.guests.getAll.invalidate();
       }
+      toast({
+        title: "Check-in failed",
+        description: "Please try again",
+        variant: "destructive",
+      });
     },
   });
 
@@ -57,6 +59,7 @@ export function useOptimisticUpdate(eventId: string | undefined) {
         utils.raffle.getRaffleTotals.invalidate({ eventId });
         utils.dashboard.getStats.invalidate({ eventId });
       }
+      toast({ title: "Raffle tickets sold", variant: "success" });
     },
   });
 
@@ -67,6 +70,7 @@ export function useOptimisticUpdate(eventId: string | undefined) {
         utils.raffle.getFiftyFiftyTotals.invalidate({ eventId });
         utils.dashboard.getStats.invalidate({ eventId });
       }
+      toast({ title: "50/50 tickets sold", variant: "success" });
     },
   });
 
