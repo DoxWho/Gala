@@ -9,7 +9,8 @@ import { EventGoalProgress } from "@/components/dashboard/EventGoalProgress";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/utils/date";
-import { Calendar } from "lucide-react";
+import { Calendar, Users, Heart, Gavel, FileBarChart } from "lucide-react";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const { data: event, isLoading: eventLoading } =
@@ -90,42 +91,54 @@ export default function DashboardPage() {
             <CardTitle className="text-base">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <a
+            <Link
               href="/guests"
-              className="block rounded-lg border p-3 hover:bg-accent transition-colors"
+              className="flex items-center gap-3 rounded-lg border p-3 hover:bg-accent transition-colors min-h-[56px]"
             >
-              <div className="font-medium text-sm">Guest Check-In</div>
-              <div className="text-xs text-muted-foreground">
-                Manage guest arrivals and check-ins
+              <Users className="h-5 w-5 text-primary shrink-0" />
+              <div>
+                <div className="font-medium text-sm">Guest Check-In</div>
+                <div className="text-xs text-muted-foreground">
+                  Manage guest arrivals and check-ins
+                </div>
               </div>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/impact-board"
-              className="block rounded-lg border p-3 hover:bg-accent transition-colors"
+              className="flex items-center gap-3 rounded-lg border p-3 hover:bg-accent transition-colors min-h-[56px]"
             >
-              <div className="font-medium text-sm">Impact Board</div>
-              <div className="text-xs text-muted-foreground">
-                Record pledges and donations
+              <Heart className="h-5 w-5 text-pink-500 shrink-0" />
+              <div>
+                <div className="font-medium text-sm">Impact Board</div>
+                <div className="text-xs text-muted-foreground">
+                  Record pledges and donations
+                </div>
               </div>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/auction"
-              className="block rounded-lg border p-3 hover:bg-accent transition-colors"
+              className="flex items-center gap-3 rounded-lg border p-3 hover:bg-accent transition-colors min-h-[56px]"
             >
-              <div className="font-medium text-sm">Live Auction</div>
-              <div className="text-xs text-muted-foreground">
-                Manage auction items and winners
+              <Gavel className="h-5 w-5 text-indigo-500 shrink-0" />
+              <div>
+                <div className="font-medium text-sm">Live Auction</div>
+                <div className="text-xs text-muted-foreground">
+                  Manage auction items and winners
+                </div>
               </div>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/reports"
-              className="block rounded-lg border p-3 hover:bg-accent transition-colors"
+              className="flex items-center gap-3 rounded-lg border p-3 hover:bg-accent transition-colors min-h-[56px]"
             >
-              <div className="font-medium text-sm">Reports & Export</div>
-              <div className="text-xs text-muted-foreground">
-                View reports and export data
+              <FileBarChart className="h-5 w-5 text-emerald-500 shrink-0" />
+              <div>
+                <div className="font-medium text-sm">Reports & Export</div>
+                <div className="text-xs text-muted-foreground">
+                  View reports and export data
+                </div>
               </div>
-            </a>
+            </Link>
           </CardContent>
         </Card>
       </div>
