@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../server";
-import { guests, parties, pledges, raffleSales, fiftyFiftySales } from "@/lib/db/schema";
-import { eq, and, or, ilike, sql, desc } from "drizzle-orm";
+import { guests, parties } from "@/lib/db/schema";
+import { eq, and, or, ilike, sql } from "drizzle-orm";
 
 export const guestsRouter = router({
   getAll: protectedProcedure

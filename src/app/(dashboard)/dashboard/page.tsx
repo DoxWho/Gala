@@ -17,7 +17,7 @@ export default function DashboardPage() {
 
   const { data: stats, isLoading: statsLoading } =
     trpc.dashboard.getStats.useQuery(
-      { eventId: event?.id! },
+      { eventId: event?.id ?? "" },
       {
         enabled: !!event?.id,
         refetchInterval: 10000,

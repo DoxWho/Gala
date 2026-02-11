@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Users, UserCheck } from "lucide-react";
+import { Users } from "lucide-react";
 
 interface AttendanceCounterProps {
   totalGuests: number;

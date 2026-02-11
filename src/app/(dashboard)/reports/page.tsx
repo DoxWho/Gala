@@ -23,12 +23,12 @@ export default function ReportsPage() {
     trpc.dashboard.getActiveEvent.useQuery();
 
   const { data: stats } = trpc.dashboard.getStats.useQuery(
-    { eventId: event?.id! },
+    { eventId: event?.id ?? "" },
     { enabled: !!event?.id }
   );
 
   const { data: impactTotals } = trpc.impactBoard.getTotals.useQuery(
-    { eventId: event?.id! },
+    { eventId: event?.id ?? "" },
     { enabled: !!event?.id }
   );
 
@@ -64,7 +64,7 @@ export default function ReportsPage() {
       });
       const result = await res.json();
       setImportResult(result);
-    } catch (err) {
+    } catch {
       setImportResult({
         success: false,
         importedCount: 0,

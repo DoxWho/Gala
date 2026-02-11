@@ -5,12 +5,11 @@ import {
   guests,
   parties,
   pledges,
-  impactBoardItems,
   auctionItems,
   raffleSales,
   fiftyFiftySales,
 } from "@/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { DashboardStats } from "@/types";
 
 export const dashboardRouter = router({

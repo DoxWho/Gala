@@ -56,7 +56,9 @@ export async function importGuestsFromCSV(
           partyMap.set(p.partyName.toLowerCase(), p.id);
         }
 
-        for (const [index, rawRow] of results.data.entries()) {
+        for (let i = 0; i < results.data.length; i++) {
+          const index = i;
+          const rawRow = results.data[i];
           try {
             const row = normalizeRow(rawRow);
 
@@ -105,7 +107,7 @@ export async function importGuestsFromCSV(
           errors,
         });
       },
-      error: (error) => {
+      error: (error: Error) => {
         resolve({
           success: false,
           importedCount: 0,

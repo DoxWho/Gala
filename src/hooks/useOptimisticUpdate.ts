@@ -5,7 +5,7 @@ import { useSyncStore } from "@/store/syncStore";
 
 export function useOptimisticUpdate(eventId: string | undefined) {
   const utils = trpc.useUtils();
-  const { isOnline } = useSyncStore();
+  useSyncStore();
 
   const checkInMutation = trpc.guests.checkIn.useMutation({
     onMutate: async ({ guestId, isCheckedIn }) => {
@@ -42,7 +42,7 @@ export function useOptimisticUpdate(eventId: string | undefined) {
         utils.dashboard.getStats.invalidate({ eventId });
       }
     },
-    onError: (_err, _vars, _context) => {
+    onError: () => {
       // Revert on error by refetching
       if (eventId) {
         utils.guests.getAll.invalidate();

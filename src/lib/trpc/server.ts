@@ -1,12 +1,13 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import { getServerSession } from "next-auth";
+import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { auditLog } from "@/lib/db/schema";
 import superjson from "superjson";
 
 export interface Context {
-  session: Awaited<ReturnType<typeof getServerSession>> | null;
+  session: Session | null;
   db: typeof db;
 }
 
@@ -34,7 +35,12 @@ const isAuthed = t.middleware(({ ctx, next }) => {
     ctx: {
       ...ctx,
       session: ctx.session,
-      user: ctx.session.user,
+      user: ctx.session.user as {
+        id: string;
+        email: string;
+        name: string;
+        role: "admin" | "volunteer";
+      },
     },
   });
 });
@@ -47,7 +53,13 @@ const isAdmin = t.middleware(({ ctx, next }) => {
       message: "You must be logged in",
     });
   }
-  if (ctx.session.user.role !== "admin") {
+  const user = ctx.session.user as {
+    id: string;
+    email: string;
+    name: string;
+    role: "admin" | "volunteer";
+  };
+  if (user.role !== "admin") {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "Admin access required",
@@ -57,7 +69,7 @@ const isAdmin = t.middleware(({ ctx, next }) => {
     ctx: {
       ...ctx,
       session: ctx.session,
-      user: ctx.session.user,
+      user,
     },
   });
 });
@@ -67,9 +79,10 @@ const withAudit = t.middleware(async ({ ctx, next, path, type }) => {
   const result = await next();
   // Log mutations to audit log
   if (type === "mutation" && ctx.session?.user) {
+    const user = ctx.session.user as { id: string };
     try {
       await db.insert(auditLog).values({
-        userId: ctx.session.user.id,
+        userId: user.id,
         action: path,
         entityType: path.split(".")[0],
         newValues: JSON.stringify({ path, type }),

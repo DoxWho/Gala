@@ -3,7 +3,6 @@
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useSyncStore } from "@/store/syncStore";
 import { Wifi, WifiOff, RefreshCw } from "lucide-react";
-import { cn } from "@/lib/utils/cn";
 
 export function ConnectionStatus() {
   const isOnline = useOnlineStatus();

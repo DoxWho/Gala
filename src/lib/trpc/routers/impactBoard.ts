@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../server";
-import { impactBoardItems, pledges, guests } from "@/lib/db/schema";
+import { impactBoardItems, pledges } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 
 export const impactBoardRouter = router({

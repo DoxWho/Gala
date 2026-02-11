@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
-import { formatCurrency } from "@/lib/utils/formatting";
 import { formatDateTime } from "@/lib/utils/date";
 import { UserPlus, Settings, Shield, History } from "lucide-react";
 

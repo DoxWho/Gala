@@ -1,7 +1,7 @@
 import Papa from "papaparse";
 import { db } from "@/lib/db";
-import { guests, parties, pledges, impactBoardItems, raffleSales, fiftyFiftySales, auctionItems } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { parties, auctionItems } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function exportEventData(eventId: string): Promise<string> {
   // Fetch all guests with their related data

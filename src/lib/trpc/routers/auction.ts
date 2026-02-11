@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../server";
-import { auctionItems, parties } from "@/lib/db/schema";
-import { eq, sql, isNotNull } from "drizzle-orm";
+import { auctionItems } from "@/lib/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 export const auctionRouter = router({
   getAll: protectedProcedure
