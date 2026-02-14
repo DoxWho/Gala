@@ -110,7 +110,17 @@ export default function SettingsPage() {
   const [ticketSales, setTicketSales] = useState("");
   const [sponsorships, setSponsorships] = useState("");
   const [prePledges, setPrePledges] = useState("");
+  const [rafflePrice, setRafflePrice] = useState("");
+  const [fiftyFiftyPrice, setFiftyFiftyPrice] = useState("");
+  const [fiftyFiftyBundleQty, setFiftyFiftyBundleQty] = useState("");
+  const [fiftyFiftyBundlePrice, setFiftyFiftyBundlePrice] = useState("");
   const [formInitialized, setFormInitialized] = useState(false);
+
+  // Sponsorship ticket stats
+  const { data: ticketPoolStats } = trpc.sponsorship.getTicketPoolStats.useQuery(
+    { eventId: event?.id ?? "" },
+    { enabled: !!event?.id && session?.user?.role === "admin" }
+  );
 
   // Populate form from event data using useEffect (not during render)
   useEffect(() => {
@@ -120,6 +130,10 @@ export default function SettingsPage() {
       setTicketSales(event.initialTicketSales || "0");
       setSponsorships(event.initialSponsorships || "0");
       setPrePledges(event.initialPrePledges || "0");
+      setRafflePrice(event.rafflePricePerTicket || "10.00");
+      setFiftyFiftyPrice(event.fiftyFiftyPricePerTicket || "25.00");
+      setFiftyFiftyBundleQty(String(event.fiftyFiftyBundleQty ?? 5));
+      setFiftyFiftyBundlePrice(event.fiftyFiftyBundlePrice || "100.00");
       setFormInitialized(true);
     }
   }, [event, formInitialized]);
@@ -239,6 +253,11 @@ export default function SettingsPage() {
                     initialTicketSales: parseFloat(ticketSales) || 0,
                     initialSponsorships: parseFloat(sponsorships) || 0,
                     initialPrePledges: parseFloat(prePledges) || 0,
+                    rafflePricePerTicket: parseFloat(rafflePrice) || 10,
+                    fiftyFiftyPricePerTicket: parseFloat(fiftyFiftyPrice) || 25,
+                    fiftyFiftyBundleQty: parseInt(fiftyFiftyBundleQty) || 5,
+                    fiftyFiftyBundlePrice:
+                      parseFloat(fiftyFiftyBundlePrice) || 100,
                   });
                 }}
                 disabled={updateEvent.isPending}
@@ -247,6 +266,123 @@ export default function SettingsPage() {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Ticket Pricing */}
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>Ticket Pricing</CardTitle>
+              <CardDescription>
+                Configure raffle and 50/50 ticket prices
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="rafflePrice">
+                    Raffle Price Per Ticket ($)
+                  </Label>
+                  <Input
+                    id="rafflePrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={rafflePrice}
+                    onChange={(e) => setRafflePrice(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fiftyFiftyPrice">
+                    50/50 Price Per Ticket ($)
+                  </Label>
+                  <Input
+                    id="fiftyFiftyPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={fiftyFiftyPrice}
+                    onChange={(e) => setFiftyFiftyPrice(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fiftyFiftyBundleQty">
+                    50/50 Bundle Quantity
+                  </Label>
+                  <Input
+                    id="fiftyFiftyBundleQty"
+                    type="number"
+                    min="1"
+                    value={fiftyFiftyBundleQty}
+                    onChange={(e) => setFiftyFiftyBundleQty(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fiftyFiftyBundlePrice">
+                    50/50 Bundle Price ($)
+                  </Label>
+                  <Input
+                    id="fiftyFiftyBundlePrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={fiftyFiftyBundlePrice}
+                    onChange={(e) => setFiftyFiftyBundlePrice(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                50/50 pricing: ${fiftyFiftyPrice || "25"} each or{" "}
+                {fiftyFiftyBundleQty || "5"} for ${fiftyFiftyBundlePrice || "100"}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Sponsored Ticket Pool Summary */}
+          {ticketPoolStats && (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>Sponsored Ticket Pool</CardTitle>
+                <CardDescription>
+                  Overview of sponsored tickets across all sponsorship tiers
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="text-center p-3 rounded-lg bg-muted">
+                    <div className="text-2xl font-bold">
+                      {ticketPoolStats.totalSponsoredTickets}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Total Sponsored
+                    </div>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {ticketPoolStats.assignedSponsoredTickets}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Assigned
+                    </div>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-green-50 dark:bg-green-950/20">
+                    <div className="text-2xl font-bold text-green-600">
+                      {ticketPoolStats.remainingSponsoredTickets}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Remaining
+                    </div>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {ticketPoolStats.freeTickets}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Free Tickets
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Users Tab */}

@@ -83,6 +83,10 @@ export interface DashboardStats {
   fiftyFiftyRevenue: number;
   auctionRevenue: number;
   totalRaised: number;
+  // Sponsorship ticket stats
+  totalSponsoredTickets: number;
+  assignedSponsoredTickets: number;
+  remainingSponsoredTickets: number;
 }
 
 // Impact category type
@@ -95,3 +99,12 @@ export type ImpactCategory =
 
 export type DonationTypeValue = "pre_pledged" | "gala_night";
 export type UserRole = "admin" | "volunteer";
+export type TicketType = "paid" | "sponsored" | "free";
+export type SponsorshipTierValue =
+  | "builders"
+  | "framers"
+  | "foundation"
+  | "bar"
+  | "entertainment"
+  | "security"
+  | "none";

@@ -28,7 +28,7 @@ export function GuestRow({
           "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900"
       )}
     >
-      {/* Check-in toggle - large touch target */}
+      {/* Check-in toggle */}
       <div className="flex items-center gap-3 sm:w-44 min-h-[44px]">
         <CheckInToggle
           isCheckedIn={guest.isCheckedIn}
@@ -48,6 +48,20 @@ export function GuestRow({
           <span className="font-medium truncate">
             {guest.firstName} {guest.lastName}
           </span>
+          {guest.ticketType === "sponsored" && (
+            <Badge
+              className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-100"
+            >
+              Sponsored
+            </Badge>
+          )}
+          {guest.ticketType === "free" && (
+            <Badge
+              className="text-[10px] px-1.5 py-0 bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900 dark:text-purple-100"
+            >
+              Free
+            </Badge>
+          )}
           {guest.isWalkIn && (
             <Badge variant="warning" className="text-[10px] px-1.5 py-0">
               Walk-in
@@ -79,7 +93,7 @@ export function GuestRow({
         )}
       </div>
 
-      {/* Actions - large touch target */}
+      {/* Actions */}
       <div className="flex items-center min-h-[44px]">
         <GuestActions
           guestId={guest.id}

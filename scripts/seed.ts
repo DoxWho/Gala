@@ -53,10 +53,17 @@ async function seed() {
         initialTicketSales: "25000.00",
         initialSponsorships: "15000.00",
         initialPrePledges: "10000.00",
+        // 50/50 pricing: $25 each or 5 for $100
+        fiftyFiftyPricePerTicket: "25.00",
+        fiftyFiftyBundleQty: 5,
+        fiftyFiftyBundlePrice: "100.00",
+        rafflePricePerTicket: "10.00",
         isActive: true,
       })
       .returning();
     console.log("Created event:", event.name);
+    console.log("  50/50 pricing: $25 each or 5 for $100");
+    console.log("  Raffle pricing: $10 each");
     eventId = event.id;
   }
 
@@ -70,9 +77,7 @@ async function seed() {
       `Impact board already has ${existingItems.length} items, skipping.`
     );
   } else {
-    // Seed Impact Board Items
     const impactItems = [
-      // Shabbat
       { category: "shabbat" as const, title: "Shabbat Dinners", defaultAmount: "500.00", sortOrder: 1 },
       { category: "shabbat" as const, title: "Babysitting", defaultAmount: "360.00", sortOrder: 2 },
       { category: "shabbat" as const, title: "Kiddush Help", defaultAmount: "360.00", sortOrder: 3 },
@@ -80,7 +85,6 @@ async function seed() {
       { category: "shabbat" as const, title: "Lunch and Learn", defaultAmount: "270.00", sortOrder: 5 },
       { category: "shabbat" as const, title: "Musical Shabbat", defaultAmount: "250.00", sortOrder: 6 },
       { category: "shabbat" as const, title: "Shabbat Bar", defaultAmount: "100.00", sortOrder: 7 },
-      // Holidays
       { category: "holidays" as const, title: "High Holidays", defaultAmount: "1500.00", sortOrder: 1 },
       { category: "holidays" as const, title: "Sukkot", defaultAmount: "540.00", sortOrder: 2 },
       { category: "holidays" as const, title: "Simchat Torah", defaultAmount: "540.00", sortOrder: 3 },
@@ -89,20 +93,17 @@ async function seed() {
       { category: "holidays" as const, title: "Chanukah", defaultAmount: "360.00", sortOrder: 6 },
       { category: "holidays" as const, title: "Purim", defaultAmount: "360.00", sortOrder: 7 },
       { category: "holidays" as const, title: "Tu Bishvat", defaultAmount: "180.00", sortOrder: 8 },
-      // Education
       { category: "education" as const, title: "Scholar-In-Residence", defaultAmount: "2000.00", sortOrder: 1 },
       { category: "education" as const, title: "Religious School Subsidy", defaultAmount: "1000.00", sortOrder: 2 },
       { category: "education" as const, title: "Social Justice Initiative", defaultAmount: "500.00", sortOrder: 3 },
       { category: "education" as const, title: "Youth Group", defaultAmount: "500.00", sortOrder: 4 },
       { category: "education" as const, title: "Adult Education Series", defaultAmount: "500.00", sortOrder: 5 },
-      // Operating
       { category: "operating" as const, title: "Rent", defaultAmount: "14500.00", sortOrder: 1 },
       { category: "operating" as const, title: "Security", defaultAmount: "3600.00", sortOrder: 2 },
       { category: "operating" as const, title: "Electricity", defaultAmount: "1000.00", sortOrder: 3 },
       { category: "operating" as const, title: "Kesef Accounting Services", defaultAmount: "360.00", sortOrder: 4 },
       { category: "operating" as const, title: "Phone/Internet", defaultAmount: "250.00", sortOrder: 5 },
       { category: "operating" as const, title: "Paper Goods", defaultAmount: "100.00", sortOrder: 6 },
-      // Wishlist
       { category: "wishlist" as const, title: "Text Messaging Annual Communications", defaultAmount: "1000.00", sortOrder: 1 },
       { category: "wishlist" as const, title: "Office Technology", defaultAmount: "750.00", sortOrder: 2 },
       { category: "wishlist" as const, title: "Torah Maintenance", defaultAmount: "500.00", sortOrder: 3 },
@@ -112,10 +113,7 @@ async function seed() {
     ];
 
     for (const item of impactItems) {
-      await db.insert(schema.impactBoardItems).values({
-        eventId,
-        ...item,
-      });
+      await db.insert(schema.impactBoardItems).values({ eventId, ...item });
     }
     console.log(`Created ${impactItems.length} impact board items`);
   }
@@ -126,9 +124,7 @@ async function seed() {
   });
 
   if (existingAuction.length > 0) {
-    console.log(
-      `Auction already has ${existingAuction.length} items, skipping.`
-    );
+    console.log(`Auction already has ${existingAuction.length} items, skipping.`);
   } else {
     const auctionItemsList = [
       { title: "Disney 1 Day Park Hopper Tickets (x2)", description: "2 tickets for 1-day park hopper at Disney" },
@@ -141,15 +137,20 @@ async function seed() {
     ];
 
     for (const item of auctionItemsList) {
-      await db.insert(schema.auctionItems).values({
-        eventId,
-        ...item,
-      });
+      await db.insert(schema.auctionItems).values({ eventId, ...item });
     }
     console.log(`Created ${auctionItemsList.length} auction items`);
   }
 
   console.log("\nSeeding complete!");
+  console.log("\nSponsorship Tiers Available:");
+  console.log("  Builders:     $1,800 - includes 10 tickets, full-page ad");
+  console.log("  Framers:      $1,200 - includes 6 tickets, full-page ad");
+  console.log("  Foundation:   $540   - includes 2 tickets, full-page ad");
+  console.log("  Bar:          $500   - no tickets");
+  console.log("  Entertainment:$500   - no tickets");
+  console.log("  Security:     $360   - no tickets");
+
   await sql.end();
   process.exit(0);
 }

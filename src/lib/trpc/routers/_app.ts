@@ -8,6 +8,7 @@ import { auctionRouter } from "./auction";
 import { raffleRouter } from "./raffle";
 import { dashboardRouter } from "./dashboard";
 import { adminRouter } from "./admin";
+import { sponsorshipRouter } from "./sponsorship";
 
 export const appRouter = router({
   auth: authRouter,
@@ -19,6 +20,7 @@ export const appRouter = router({
   raffle: raffleRouter,
   dashboard: dashboardRouter,
   admin: adminRouter,
+  sponsorship: sponsorshipRouter,
 });
 
 export type AppRouter = typeof appRouter;

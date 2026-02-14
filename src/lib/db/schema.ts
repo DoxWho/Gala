@@ -26,6 +26,15 @@ export const impactCategory = pgEnum("impact_category", [
   "operating",
   "wishlist",
 ]);
+export const sponsorshipTier = pgEnum("sponsorship_tier", [
+  "builders",
+  "framers",
+  "foundation",
+  "bar",
+  "entertainment",
+  "security",
+  "none",
+]);
 
 // Users table
 export const users = pgTable(
@@ -71,6 +80,26 @@ export const events = pgTable("events", {
   })
     .notNull()
     .default("0"),
+  // Pricing settings
+  rafflePricePerTicket: decimal("raffle_price_per_ticket", {
+    precision: 12,
+    scale: 2,
+  })
+    .notNull()
+    .default("10.00"),
+  fiftyFiftyPricePerTicket: decimal("fifty_fifty_price_per_ticket", {
+    precision: 12,
+    scale: 2,
+  })
+    .notNull()
+    .default("25.00"),
+  fiftyFiftyBundleQty: integer("fifty_fifty_bundle_qty").notNull().default(5),
+  fiftyFiftyBundlePrice: decimal("fifty_fifty_bundle_price", {
+    precision: 12,
+    scale: 2,
+  })
+    .notNull()
+    .default("100.00"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -88,6 +117,13 @@ export const parties = pgTable(
     primaryContactName: varchar("primary_contact_name", { length: 255 }),
     primaryContactEmail: varchar("primary_contact_email", { length: 255 }),
     primaryContactPhone: varchar("primary_contact_phone", { length: 50 }),
+    // Sponsorship ticket pool
+    sponsorshipTier: sponsorshipTier("sponsorship_tier")
+      .notNull()
+      .default("none"),
+    sponsorshipTicketsTotal: integer("sponsorship_tickets_total")
+      .notNull()
+      .default(0),
     notes: text("notes"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -116,6 +152,11 @@ export const guests = pgTable(
     fiftyFiftyQuantity: integer("fifty_fifty_quantity").notNull().default(0),
     isWalkIn: boolean("is_walk_in").notNull().default(false),
     isPlusOne: boolean("is_plus_one").notNull().default(false),
+    // Sponsored ticket tracking
+    ticketType: varchar("ticket_type", { length: 50 })
+      .notNull()
+      .default("paid"), // 'paid', 'sponsored', 'free'
+    sponsorPartyId: uuid("sponsor_party_id").references(() => parties.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -123,6 +164,7 @@ export const guests = pgTable(
     partyIdx: index("guests_party_idx").on(table.partyId),
     nameIdx: index("guests_name_idx").on(table.firstName, table.lastName),
     checkedInIdx: index("guests_checked_in_idx").on(table.isCheckedIn),
+    ticketTypeIdx: index("guests_ticket_type_idx").on(table.ticketType),
   })
 );
 
@@ -136,7 +178,10 @@ export const impactBoardItems = pgTable(
       .references(() => events.id, { onDelete: "cascade" }),
     category: impactCategory("category").notNull(),
     title: varchar("title", { length: 255 }).notNull(),
-    defaultAmount: decimal("default_amount", { precision: 12, scale: 2 }).notNull(),
+    defaultAmount: decimal("default_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
     description: text("description"),
     isCustom: boolean("is_custom").notNull().default(false),
     sortOrder: integer("sort_order").notNull().default(0),
@@ -164,6 +209,7 @@ export const pledges = pgTable(
       .references(() => impactBoardItems.id, { onDelete: "cascade" }),
     amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
     donationType: donationType("donation_type").notNull(),
+    isPreImported: boolean("is_pre_imported").notNull().default(false),
     pledgedAt: timestamp("pledged_at").notNull().defaultNow(),
     pledgedBy: uuid("pledged_by")
       .notNull()
@@ -174,8 +220,12 @@ export const pledges = pgTable(
   },
   (table) => ({
     guestIdx: index("pledges_guest_idx").on(table.guestId),
-    impactItemIdx: index("pledges_impact_item_idx").on(table.impactBoardItemId),
-    donationTypeIdx: index("pledges_donation_type_idx").on(table.donationType),
+    impactItemIdx: index("pledges_impact_item_idx").on(
+      table.impactBoardItemId
+    ),
+    donationTypeIdx: index("pledges_donation_type_idx").on(
+      table.donationType
+    ),
   })
 );
 
@@ -192,6 +242,7 @@ export const auctionItems = pgTable(
     estimatedValue: decimal("estimated_value", { precision: 12, scale: 2 }),
     winningPartyId: uuid("winning_party_id").references(() => parties.id),
     finalBidAmount: decimal("final_bid_amount", { precision: 12, scale: 2 }),
+    isPreImported: boolean("is_pre_imported").notNull().default(false),
     soldAt: timestamp("sold_at"),
     soldBy: uuid("sold_by").references(() => users.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -211,8 +262,15 @@ export const raffleSales = pgTable(
       .notNull()
       .references(() => guests.id, { onDelete: "cascade" }),
     quantity: integer("quantity").notNull(),
-    pricePerTicket: decimal("price_per_ticket", { precision: 12, scale: 2 }).notNull(),
-    totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
+    pricePerTicket: decimal("price_per_ticket", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+    totalAmount: decimal("total_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+    isPreImported: boolean("is_pre_imported").notNull().default(false),
     soldAt: timestamp("sold_at").notNull().defaultNow(),
     soldBy: uuid("sold_by")
       .notNull()
@@ -233,8 +291,15 @@ export const fiftyFiftySales = pgTable(
       .notNull()
       .references(() => guests.id, { onDelete: "cascade" }),
     quantity: integer("quantity").notNull(),
-    pricePerTicket: decimal("price_per_ticket", { precision: 12, scale: 2 }).notNull(),
-    totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
+    pricePerTicket: decimal("price_per_ticket", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+    totalAmount: decimal("total_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+    isPreImported: boolean("is_pre_imported").notNull().default(false),
     soldAt: timestamp("sold_at").notNull().defaultNow(),
     soldBy: uuid("sold_by")
       .notNull()
@@ -327,6 +392,11 @@ export const guestsRelations = relations(guests, ({ one, many }) => ({
   checkedInByUser: one(users, {
     fields: [guests.checkedInBy],
     references: [users.id],
+  }),
+  sponsorParty: one(parties, {
+    fields: [guests.sponsorPartyId],
+    references: [parties.id],
+    relationName: "sponsoredGuests",
   }),
   pledges: many(pledges),
   raffleSales: many(raffleSales),

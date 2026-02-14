@@ -16,13 +16,13 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Ticket, Heart, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "@/hooks/useToast";
-import { RAFFLE_PRICE, FIFTY_FIFTY_PRICE } from "@/lib/constants";
 
 interface GuestActionsProps {
   guestId: string;
@@ -30,12 +30,30 @@ interface GuestActionsProps {
   eventId: string;
 }
 
-export function GuestActions({ guestId, guestName, eventId }: GuestActionsProps) {
+export function GuestActions({
+  guestId,
+  guestName,
+  eventId,
+}: GuestActionsProps) {
   const [raffleOpen, setRaffleOpen] = useState(false);
   const [fiftyFiftyOpen, setFiftyFiftyOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
   const utils = trpc.useUtils();
+
+  // Fetch event settings for pricing
+  const { data: event } = trpc.dashboard.getActiveEvent.useQuery();
+
+  const rafflePricePerTicket = parseFloat(
+    event?.rafflePricePerTicket || "10.00"
+  );
+  const fiftyFiftyPricePerTicket = parseFloat(
+    event?.fiftyFiftyPricePerTicket || "25.00"
+  );
+  const fiftyFiftyBundleQty = event?.fiftyFiftyBundleQty ?? 5;
+  const fiftyFiftyBundlePrice = parseFloat(
+    event?.fiftyFiftyBundlePrice || "100.00"
+  );
 
   const recordRaffleSale = trpc.raffle.recordRaffleSale.useMutation({
     onSuccess: () => {
@@ -47,7 +65,11 @@ export function GuestActions({ guestId, guestName, eventId }: GuestActionsProps)
       toast({ title: "Raffle tickets sold", variant: "success" });
     },
     onError: (err) => {
-      toast({ title: "Failed to record sale", description: err.message, variant: "destructive" });
+      toast({
+        title: "Failed to record sale",
+        description: err.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -61,9 +83,26 @@ export function GuestActions({ guestId, guestName, eventId }: GuestActionsProps)
       toast({ title: "50/50 tickets sold", variant: "success" });
     },
     onError: (err) => {
-      toast({ title: "Failed to record sale", description: err.message, variant: "destructive" });
+      toast({
+        title: "Failed to record sale",
+        description: err.message,
+        variant: "destructive",
+      });
     },
   });
+
+  // Calculate 50/50 total using bundle pricing
+  function calculateFiftyFiftyTotal(qty: number): number {
+    const bundles = Math.floor(qty / fiftyFiftyBundleQty);
+    const remaining = qty % fiftyFiftyBundleQty;
+    return bundles * fiftyFiftyBundlePrice + remaining * fiftyFiftyPricePerTicket;
+  }
+
+  // Determine effective per-ticket price for the sale
+  function calculateFiftyFiftyEffectivePrice(qty: number): number {
+    const total = calculateFiftyFiftyTotal(qty);
+    return qty > 0 ? total / qty : fiftyFiftyPricePerTicket;
+  }
 
   return (
     <>
@@ -82,6 +121,7 @@ export function GuestActions({ guestId, guestName, eventId }: GuestActionsProps)
             <DollarSign className="mr-2 h-4 w-4" />
             Sell 50/50 Tickets
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link href={`/impact-board?guestId=${guestId}`}>
               <Heart className="mr-2 h-4 w-4" />
@@ -128,10 +168,10 @@ export function GuestActions({ guestId, guestName, eventId }: GuestActionsProps)
               </div>
             </div>
             <div className="text-sm text-muted-foreground">
-              Price per ticket: ${RAFFLE_PRICE.toFixed(2)}
+              Price per ticket: ${rafflePricePerTicket.toFixed(2)}
             </div>
             <div className="text-lg font-bold">
-              Total: ${(quantity * RAFFLE_PRICE).toFixed(2)}
+              Total: ${(quantity * rafflePricePerTicket).toFixed(2)}
             </div>
           </div>
           <DialogFooter>
@@ -143,7 +183,7 @@ export function GuestActions({ guestId, guestName, eventId }: GuestActionsProps)
                 recordRaffleSale.mutate({
                   guestId,
                   quantity,
-                  pricePerTicket: RAFFLE_PRICE,
+                  pricePerTicket: rafflePricePerTicket,
                 })
               }
               disabled={recordRaffleSale.isPending}
@@ -154,7 +194,7 @@ export function GuestActions({ guestId, guestName, eventId }: GuestActionsProps)
         </DialogContent>
       </Dialog>
 
-      {/* 50/50 Sale Dialog */}
+      {/* 50/50 Sale Dialog with Bundle Pricing */}
       <Dialog open={fiftyFiftyOpen} onOpenChange={setFiftyFiftyOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -189,16 +229,63 @@ export function GuestActions({ guestId, guestName, eventId }: GuestActionsProps)
                   +
                 </Button>
               </div>
+              {/* Quick-select bundle buttons */}
+              <div className="flex gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setQuantity(1)}
+                  className="flex-1"
+                >
+                  1 × ${fiftyFiftyPricePerTicket.toFixed(0)}
+                </Button>
+                <Button
+                  type="button"
+                  variant={quantity === fiftyFiftyBundleQty ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setQuantity(fiftyFiftyBundleQty)}
+                  className="flex-1"
+                >
+                  {fiftyFiftyBundleQty} for ${fiftyFiftyBundlePrice.toFixed(0)}
+                </Button>
+                <Button
+                  type="button"
+                  variant={
+                    quantity === fiftyFiftyBundleQty * 2 ? "default" : "outline"
+                  }
+                  size="sm"
+                  onClick={() => setQuantity(fiftyFiftyBundleQty * 2)}
+                  className="flex-1"
+                >
+                  {fiftyFiftyBundleQty * 2} for $
+                  {(fiftyFiftyBundlePrice * 2).toFixed(0)}
+                </Button>
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Price per ticket: ${FIFTY_FIFTY_PRICE.toFixed(2)}
+            <div className="space-y-1">
+              <div className="text-sm text-muted-foreground">
+                ${fiftyFiftyPricePerTicket.toFixed(2)} each |{" "}
+                {fiftyFiftyBundleQty} for ${fiftyFiftyBundlePrice.toFixed(2)}
+              </div>
+              {quantity >= fiftyFiftyBundleQty && (
+                <div className="text-xs text-green-600 font-medium">
+                  Bundle applied: {Math.floor(quantity / fiftyFiftyBundleQty)}{" "}
+                  bundle(s)
+                  {quantity % fiftyFiftyBundleQty > 0 &&
+                    ` + ${quantity % fiftyFiftyBundleQty} single`}
+                </div>
+              )}
             </div>
             <div className="text-lg font-bold">
-              Total: ${(quantity * FIFTY_FIFTY_PRICE).toFixed(2)}
+              Total: ${calculateFiftyFiftyTotal(quantity).toFixed(2)}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setFiftyFiftyOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setFiftyFiftyOpen(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -206,7 +293,7 @@ export function GuestActions({ guestId, guestName, eventId }: GuestActionsProps)
                 recordFiftyFiftySale.mutate({
                   guestId,
                   quantity,
-                  pricePerTicket: FIFTY_FIFTY_PRICE,
+                  pricePerTicket: calculateFiftyFiftyEffectivePrice(quantity),
                 })
               }
               disabled={recordFiftyFiftySale.isPending}

@@ -9,14 +9,13 @@ import {
   raffleSales,
   fiftyFiftySales,
 } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import type { DashboardStats } from "@/types";
 
 export const dashboardRouter = router({
   getStats: protectedProcedure
     .input(z.object({ eventId: z.string().uuid() }))
     .query(async ({ ctx, input }): Promise<DashboardStats> => {
-      // Get event data
       const event = await ctx.db.query.events.findFirst({
         where: eq(events.id, input.eventId),
       });
@@ -25,7 +24,7 @@ export const dashboardRouter = router({
         throw new Error("Event not found");
       }
 
-      // Get attendance stats
+      // Attendance stats
       const attendanceResult = await ctx.db
         .select({
           total: sql<number>`count(*)::int`,
@@ -35,7 +34,7 @@ export const dashboardRouter = router({
         .innerJoin(parties, eq(guests.partyId, parties.id))
         .where(eq(parties.eventId, input.eventId));
 
-      // Get pledge totals by donation type
+      // Pledge totals by donation type
       const pledgeTotals = await ctx.db
         .select({
           donationType: pledges.donationType,
@@ -47,7 +46,7 @@ export const dashboardRouter = router({
         .where(eq(parties.eventId, input.eventId))
         .groupBy(pledges.donationType);
 
-      // Get auction revenue
+      // Auction revenue
       const auctionResult = await ctx.db
         .select({
           total: sql<string>`coalesce(sum(${auctionItems.finalBidAmount}), 0)`,
@@ -55,7 +54,7 @@ export const dashboardRouter = router({
         .from(auctionItems)
         .where(eq(auctionItems.eventId, input.eventId));
 
-      // Get raffle revenue
+      // Raffle revenue
       const raffleResult = await ctx.db
         .select({
           total: sql<string>`coalesce(sum(${raffleSales.totalAmount}), 0)`,
@@ -65,7 +64,7 @@ export const dashboardRouter = router({
         .innerJoin(parties, eq(guests.partyId, parties.id))
         .where(eq(parties.eventId, input.eventId));
 
-      // Get 50/50 revenue
+      // 50/50 revenue
       const fiftyFiftyResult = await ctx.db
         .select({
           total: sql<string>`coalesce(sum(${fiftyFiftySales.totalAmount}), 0)`,
@@ -75,14 +74,42 @@ export const dashboardRouter = router({
         .innerJoin(parties, eq(guests.partyId, parties.id))
         .where(eq(parties.eventId, input.eventId));
 
+      // Sponsorship ticket stats
+      const ticketPoolResult = await ctx.db
+        .select({
+          totalTickets: sql<number>`coalesce(sum(${parties.sponsorshipTicketsTotal}), 0)::int`,
+        })
+        .from(parties)
+        .where(
+          and(
+            eq(parties.eventId, input.eventId),
+            sql`${parties.sponsorshipTier} != 'none'`
+          )
+        );
+
+      const assignedTicketResult = await ctx.db
+        .select({
+          assignedTickets: sql<number>`count(*)::int`,
+        })
+        .from(guests)
+        .innerJoin(parties, eq(guests.partyId, parties.id))
+        .where(
+          and(
+            eq(parties.eventId, input.eventId),
+            eq(guests.ticketType, "sponsored")
+          )
+        );
+
       const galaNightDonations =
         parseFloat(
-          pledgeTotals.find((p) => p.donationType === "gala_night")?.total as string || "0"
+          (pledgeTotals.find((p) => p.donationType === "gala_night")
+            ?.total as string) || "0"
         ) || 0;
 
       const prePledgedDonations =
         parseFloat(
-          pledgeTotals.find((p) => p.donationType === "pre_pledged")?.total as string || "0"
+          (pledgeTotals.find((p) => p.donationType === "pre_pledged")
+            ?.total as string) || "0"
         ) || 0;
 
       const raffleRevenue =
@@ -93,8 +120,14 @@ export const dashboardRouter = router({
         parseFloat(auctionResult[0]?.total as string) || 0;
 
       const initialTicketSales = parseFloat(event.initialTicketSales || "0");
-      const initialSponsorships = parseFloat(event.initialSponsorships || "0");
+      const initialSponsorships = parseFloat(
+        event.initialSponsorships || "0"
+      );
       const initialPrePledges = parseFloat(event.initialPrePledges || "0");
+
+      const totalSponsoredTickets = ticketPoolResult[0]?.totalTickets ?? 0;
+      const assignedSponsoredTickets =
+        assignedTicketResult[0]?.assignedTickets ?? 0;
 
       const totalRaised =
         initialTicketSales +
@@ -119,6 +152,10 @@ export const dashboardRouter = router({
         fiftyFiftyRevenue,
         auctionRevenue,
         totalRaised,
+        totalSponsoredTickets,
+        assignedSponsoredTickets,
+        remainingSponsoredTickets:
+          totalSponsoredTickets - assignedSponsoredTickets,
       };
     }),
 
@@ -138,6 +175,10 @@ export const dashboardRouter = router({
         initialTicketSales: z.number().min(0).optional(),
         initialSponsorships: z.number().min(0).optional(),
         initialPrePledges: z.number().min(0).optional(),
+        rafflePricePerTicket: z.number().min(0).optional(),
+        fiftyFiftyPricePerTicket: z.number().min(0).optional(),
+        fiftyFiftyBundleQty: z.number().int().min(1).optional(),
+        fiftyFiftyBundlePrice: z.number().min(0).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -153,6 +194,15 @@ export const dashboardRouter = router({
         updates.initialSponsorships = data.initialSponsorships.toFixed(2);
       if (data.initialPrePledges !== undefined)
         updates.initialPrePledges = data.initialPrePledges.toFixed(2);
+      if (data.rafflePricePerTicket !== undefined)
+        updates.rafflePricePerTicket = data.rafflePricePerTicket.toFixed(2);
+      if (data.fiftyFiftyPricePerTicket !== undefined)
+        updates.fiftyFiftyPricePerTicket =
+          data.fiftyFiftyPricePerTicket.toFixed(2);
+      if (data.fiftyFiftyBundleQty !== undefined)
+        updates.fiftyFiftyBundleQty = data.fiftyFiftyBundleQty;
+      if (data.fiftyFiftyBundlePrice !== undefined)
+        updates.fiftyFiftyBundlePrice = data.fiftyFiftyBundlePrice.toFixed(2);
 
       const [updated] = await ctx.db
         .update(events)
